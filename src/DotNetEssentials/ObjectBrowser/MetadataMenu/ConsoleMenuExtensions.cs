@@ -74,23 +74,38 @@ namespace ObjectBrowser.MetadataMenu
 			};
 		}
 
-		private static void PrintMemberInfoProperties(MemberInfo memberInfo)
+        private static void PrintMemberInfoProperties(MemberInfo memberInfo)
 		{
-			var memberInfoType = memberInfo.GetType(); // get concrete type in runtime
+            var memberInfoType = memberInfo.GetType(); // get concrete type in runtime
 
-			var properties = memberInfoType.GetProperties();
+            var properties = memberInfoType.GetProperties();
 
-			var maxPropertyNameLength = properties.Max(x => x.Name.Length);
+            var maxPropertyNameLength = properties.Max(x => x.Name.Length);
 
-			Console.WriteLine(GetMemberInfoString(memberInfo));
+            Console.WriteLine(GetMemberInfoString(memberInfo));
 
-			var format = "\t{0,-" + maxPropertyNameLength.ToString() + "}: {1}";
+            var format = "\t{0,-" + maxPropertyNameLength.ToString() + "}: {1}";
 
-			foreach (var propertyInfo in properties.OrderBy(x => x.MemberType).ThenBy(x => x.Name))
-			{
-				Console.WriteLine(format, propertyInfo.Name, propertyInfo.GetValue(memberInfo));
-			}
-		}
+            if (memberInfo.MemberType == MemberTypes.Method)
+            {
+                var param = ((MethodInfo)memberInfo).GetParameters();
+                foreach (var p in param)
+                {
+                    Console.WriteLine("------------- {0} -------------", p.ParameterType.Name);
+                    foreach (var prop in p.GetType().GetProperties().Where(prop => prop.GetGetMethod().IsPublic))
+                    {
+                        Console.WriteLine(format, prop.Name, prop.GetValue(p));
+                    }
+                    Console.WriteLine("--------------------------------------------");
+                    Console.WriteLine();
+                }
+            }
+
+            foreach (var propertyInfo in properties.OrderBy(x => x.MemberType).ThenBy(x => x.Name))
+            {
+                Console.WriteLine(format, propertyInfo.Name, propertyInfo.GetValue(memberInfo));
+            }
+        }
 
 		private static string GetMemberInfoString(MemberInfo memberInfo)
 		{
